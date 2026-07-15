@@ -35,6 +35,10 @@
     return new Intl.NumberFormat("en-IN", { style: "currency", currency: STORE.currency, maximumFractionDigits: 0 }).format(value);
   }
 
+  function productSrcset(image) {
+    return `${image.replace(/\.webp$/, "-640.webp")} 640w, ${image} 900w`;
+  }
+
   function safeJSON(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
     catch { return fallback; }
@@ -51,7 +55,7 @@
   function shell() {
     const active = key => page === key ? "active" : "";
     document.body.insertAdjacentHTML("afterbegin", `
-      <div class="announcement">${STORE.announcement}</div>
+      <aside class="announcement" aria-label="Store announcement">${STORE.announcement}</aside>
       <header class="site-header" id="site-header">
         <div class="container header-inner">
           <a class="brand-logo" href="index.html" aria-label="${STORE.name} home"><img src="assets/brand/logo.svg" alt="${STORE.name}" width="260" height="64"></a>
@@ -63,7 +67,7 @@
           </nav>
           <div class="header-actions">
             <button class="icon-btn" type="button" data-open-search aria-label="Search products">${icons.search}</button>
-            <a class="icon-btn" href="wishlist.html" aria-label="Wishlist">${icons.heart}<span class="badge-count wishlist-count">0</span></a>
+            <a class="icon-btn header-wishlist" href="wishlist.html" aria-label="Wishlist">${icons.heart}<span class="badge-count wishlist-count">0</span></a>
             <a class="icon-btn" href="cart.html" aria-label="Shopping cart">${icons.cart}<span class="badge-count cart-count">0</span></a>
             <button class="icon-btn menu-toggle" type="button" data-open-menu aria-label="Open menu">${icons.menu}</button>
           </div>
@@ -102,7 +106,7 @@
         <a class="${active("wishlist")}" href="wishlist.html">${icons.heart}<span>Wishlist</span><span class="badge-count wishlist-count">0</span></a>
         <a class="${active("cart")}" href="cart.html">${icons.cart}<span>Cart</span><span class="badge-count cart-count">0</span></a>
       </nav>
-      <div class="whatsapp-float"><span>Chat with us</span><button type="button" data-general-wa aria-label="Chat on WhatsApp">${icons.whatsapp}</button></div>
+      <aside class="whatsapp-float" aria-label="WhatsApp support"><span>Chat with us</span><button type="button" data-general-wa aria-label="Chat on WhatsApp">${icons.whatsapp}</button></aside>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
       <div class="modal" id="message-modal" aria-hidden="true">
         <div class="modal-card" role="dialog" aria-modal="true" aria-label="WhatsApp message preview">
@@ -128,7 +132,7 @@
     return `
       <article class="product-card" data-product-card="${product.id}">
         <div class="product-media">
-          <a href="product.html?id=${encodeURIComponent(product.id)}" aria-label="View ${product.name}"><img src="${product.image}" alt="${product.name}" loading="lazy" width="900" height="900"></a>
+          <a href="product.html?id=${encodeURIComponent(product.id)}" aria-label="View ${product.name}"><img src="${product.image}" srcset="${productSrcset(product.image)}" sizes="(max-width: 767px) 46vw, (max-width: 1023px) 31vw, 280px" alt="${product.name}" loading="lazy" decoding="async" width="900" height="900"></a>
           ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ""}
           <button class="icon-btn wishlist-btn ${wished ? "active" : ""}" type="button" data-wishlist="${product.id}" aria-label="${wished ? "Remove from" : "Add to"} wishlist">${icons.heart}</button>
         </div>
@@ -149,7 +153,7 @@
   function homePage() {
     root.innerHTML = `
       <section class="hero">
-        <div class="hero-media"><img src="assets/images/hero/hero-home.webp" alt="Handcrafted pottery, basket and tableware in warm window light" width="1376" height="768"></div>
+        <div class="hero-media"><img src="assets/images/hero/hero-home.webp" srcset="assets/images/hero/hero-home-960.webp 960w, assets/images/hero/hero-home.webp 1376w" sizes="100vw" alt="Handcrafted pottery, basket and tableware in warm window light" fetchpriority="high" decoding="async" width="1376" height="768"></div>
         <div class="container hero-content"><p class="eyebrow">Small-batch · Natural · Thoughtful</p><h1>Made with<br>care.</h1><p>Curated artisan goods for a slower, warmer home—ordered simply and directly through WhatsApp.</p><div class="hero-actions"><a class="btn btn-primary" href="#featured">Explore collection ${icons.arrow}</a><button class="btn btn-outline" data-general-wa>${icons.whatsapp} Order via WhatsApp</button></div></div>
         <div class="hero-note">Thoughtfully sourced · Carefully packed</div>
       </section>
@@ -174,7 +178,7 @@
     let activeCategory = params.get("category") || (params.get("filter") === "new" ? "New Arrivals" : "All");
     root.innerHTML = `
       <section class="page-hero"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Shop</span></div><p class="eyebrow">Browse the collection</p><h1>Made to be lived with.</h1><p>Quietly beautiful pieces in clay, natural fibres and handwoven cotton.</p></div></section>
-      <section class="section"><div class="container shop-layout"><div class="shop-toolbar"><label class="search-box">${icons.search}<span class="sr-only">Search products</span><input id="shop-search" type="search" placeholder="Search the collection…"></label><div class="sort-row"><span class="product-count" id="shop-count"></span><select class="select" id="shop-sort" aria-label="Sort products"><option value="featured">Featured</option><option value="new">Newest</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option></select></div></div><div class="shop-categories no-scrollbar" id="shop-categories">${categoriesMarkup(activeCategory,"shop")}</div><div class="product-grid" id="shop-grid"></div></div></section>`;
+      <section class="section"><div class="container shop-layout"><div class="shop-toolbar"><label class="search-box">${icons.search}<span class="sr-only">Search products</span><input id="shop-search" type="search" placeholder="Search the collection…"></label><div class="sort-row"><span class="product-count" id="shop-count"></span><select class="select" id="shop-sort" aria-label="Sort products"><option value="featured">Featured</option><option value="new">Newest</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option></select></div></div><div class="shop-categories no-scrollbar" id="shop-categories">${categoriesMarkup(activeCategory,"shop")}</div><h2 class="sr-only" id="shop-results-heading">Shop products</h2><div class="product-grid" id="shop-grid" aria-labelledby="shop-results-heading"></div></div></section>`;
 
     const search = document.getElementById("shop-search");
     const sort = document.getElementById("shop-sort");
@@ -209,7 +213,7 @@
     const descriptionMeta = document.querySelector('meta[name="description"]');
     if (descriptionMeta) descriptionMeta.content = product.shortDescription;
     root.innerHTML = `
-      <section class="section-sm"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><a href="shop.html">Shop</a><span>/</span><span>${product.name}</span></div><div class="product-detail"><div class="product-gallery"><img class="product-main-image" src="${product.image}" alt="${product.name}" width="900" height="900"><span class="product-badge">${product.badge || "Handmade"}</span></div><div class="product-info"><p class="eyebrow">${product.category} · Handcrafted</p><h1>${product.name}</h1><div class="product-detail-price"><span>${formatPrice(product.price)}</span>${product.oldPrice ? `<span class="product-old-price">${formatPrice(product.oldPrice)}</span>` : ""}</div><div class="stock-line"><span class="stock-dot"></span>${product.stock > 0 ? `${product.stock} available` : "Currently unavailable"}</div><p class="product-lead">${product.shortDescription}</p><div class="quantity-row"><div class="quantity-control" aria-label="Quantity"><button type="button" id="qty-minus" aria-label="Decrease quantity">−</button><span id="product-qty">1</span><button type="button" id="qty-plus" aria-label="Increase quantity">+</button></div><button class="icon-btn ${getWishlist().includes(product.id) ? "active" : ""}" data-wishlist="${product.id}" aria-label="Add to wishlist">${icons.heart}</button></div><div class="product-cta-row"><button class="btn btn-primary" id="detail-add">${icons.cart} Add to cart</button><button class="btn btn-whatsapp" id="detail-wa">${icons.whatsapp} Order now</button></div><div class="product-meta"><span><strong>Material:</strong> ${product.material}</span><span><strong>Size:</strong> ${product.dimensions}</span><span><strong>Delivery:</strong> Confirmed on WhatsApp</span></div><div class="accordions"><details class="accordion" open><summary>Description</summary><p>${product.description}</p></details><details class="accordion"><summary>Care</summary><p>${product.care}</p></details><details class="accordion"><summary>Handmade variation</summary><p>Small differences in colour, texture and form are natural signs of a handmade piece and make yours unique.</p></details></div></div></div></div></section>
+      <section class="section-sm"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><a href="shop.html">Shop</a><span>/</span><span>${product.name}</span></div><div class="product-detail"><div class="product-gallery"><img class="product-main-image" src="${product.image}" srcset="${productSrcset(product.image)}" sizes="(max-width: 767px) calc(100vw - 32px), 52vw" alt="${product.name}" decoding="async" width="900" height="900"><span class="product-badge">${product.badge || "Handmade"}</span></div><div class="product-info"><p class="eyebrow">${product.category} · Handcrafted</p><h1>${product.name}</h1><div class="product-detail-price"><span>${formatPrice(product.price)}</span>${product.oldPrice ? `<span class="product-old-price">${formatPrice(product.oldPrice)}</span>` : ""}</div><div class="stock-line"><span class="stock-dot"></span>${product.stock > 0 ? `${product.stock} available` : "Currently unavailable"}</div><p class="product-lead">${product.shortDescription}</p><div class="quantity-row"><div class="quantity-control" aria-label="Quantity"><button type="button" id="qty-minus" aria-label="Decrease quantity">−</button><span id="product-qty">1</span><button type="button" id="qty-plus" aria-label="Increase quantity">+</button></div><button class="icon-btn ${getWishlist().includes(product.id) ? "active" : ""}" data-wishlist="${product.id}" aria-label="Add to wishlist">${icons.heart}</button></div><div class="product-cta-row"><button class="btn btn-primary" id="detail-add">${icons.cart} Add to cart</button><button class="btn btn-whatsapp" id="detail-wa">${icons.whatsapp} Order now</button></div><div class="product-meta"><span><strong>Material:</strong> ${product.material}</span><span><strong>Size:</strong> ${product.dimensions}</span><span><strong>Delivery:</strong> Confirmed on WhatsApp</span></div><div class="accordions"><details class="accordion" open><summary>Description</summary><p>${product.description}</p></details><details class="accordion"><summary>Care</summary><p>${product.care}</p></details><details class="accordion"><summary>Handmade variation</summary><p>Small differences in colour, texture and form are natural signs of a handmade piece and make yours unique.</p></details></div></div></div></div></section>
       <section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">You may also like</p><h2 class="section-title">More to discover</h2></div><a href="shop.html" class="btn btn-link">Shop all ${icons.arrow}</a></div><div class="product-grid">${PRODUCTS.filter(p => p.id !== product.id && (p.category === product.category || p.featured)).slice(0,4).map(productCard).join("")}</div></div></section>`;
     let qty = 1;
     const qtyEl = document.getElementById("product-qty");
@@ -283,6 +287,66 @@
       <section class="section"><div class="container policy-layout"><nav class="policy-nav no-scrollbar"><a href="#shipping">Shipping</a><a href="#returns">Returns</a><a href="#privacy">Privacy</a><a href="#terms">Terms</a></nav><div class="policy-content"><section class="policy-section" id="shipping"><p class="eyebrow">01</p><h2>Shipping & delivery</h2><p>Availability, delivery charge and estimated dispatch date are confirmed on WhatsApp before an order is final.</p><h3>Packaging</h3><p>Fragile products are carefully packed. Please record an unboxing video for any damage claim.</p><h3>Delivery timing</h3><p>Delivery times vary by pincode and product. Custom or small-batch products may need additional preparation time.</p></section><section class="policy-section" id="returns"><p class="eyebrow">02</p><h2>Returns & damage</h2><p>Contact the store within 48 hours of delivery if an item arrives damaged or incorrect. Share clear photos and an unboxing video.</p><ul><li>Handmade variations in colour and shape are not considered defects.</li><li>Used, washed or altered items cannot be returned.</li><li>Approved refunds are processed using the original agreed method.</li></ul></section><section class="policy-section" id="privacy"><p class="eyebrow">03</p><h2>Privacy</h2><p>Cart and wishlist information is stored only in your browser. Information entered for an order is included in the WhatsApp message you choose to send.</p><p>This static demo does not store customer addresses on a server. Analytics or forms added later must be disclosed here.</p></section><section class="policy-section" id="terms"><p class="eyebrow">04</p><h2>Terms of use</h2><p>Product prices, stock and delivery are subject to final confirmation. Website images aim to represent products accurately, but screen and handmade variations may occur.</p><p>These terms are placeholder content for the demo and should be legally reviewed for the operating business.</p></section></div></div></section>`;
   }
 
+  function updateSEO() {
+    const canonicalUrl = new URL(location.href);
+    canonicalUrl.hash = "";
+    if (page !== "product") canonicalUrl.search = "";
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = canonicalUrl.href;
+
+    const graph = [{
+      "@type": "LocalBusiness",
+      "@id": `${new URL("index.html", location.href).href}#business`,
+      name: STORE.name,
+      description: STORE.description,
+      url: new URL("index.html", location.href).href,
+      image: new URL("assets/images/hero/hero-home.webp", location.href).href,
+      address: { "@type": "PostalAddress", addressLocality: "Gorakhpur", addressRegion: "Uttar Pradesh", addressCountry: "IN" }
+    }];
+
+    if (page === "product") {
+      const product = getProduct(new URLSearchParams(location.search).get("id")) || PRODUCTS[0];
+      graph.push({
+        "@type": "Product",
+        name: product.name,
+        description: product.description,
+        image: [new URL(product.image, location.href).href],
+        sku: product.id,
+        category: product.category,
+        offers: {
+          "@type": "Offer",
+          url: canonicalUrl.href,
+          priceCurrency: STORE.currency,
+          price: product.price,
+          availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          itemCondition: "https://schema.org/NewCondition"
+        }
+      });
+      graph.push({
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: new URL("index.html", location.href).href },
+          { "@type": "ListItem", position: 2, name: "Shop", item: new URL("shop.html", location.href).href },
+          { "@type": "ListItem", position: 3, name: product.name, item: canonicalUrl.href }
+        ]
+      });
+    }
+
+    let schema = document.getElementById("site-schema");
+    if (!schema) {
+      schema = document.createElement("script");
+      schema.type = "application/ld+json";
+      schema.id = "site-schema";
+      document.head.appendChild(schema);
+    }
+    schema.textContent = JSON.stringify({ "@context": "https://schema.org", "@graph": graph });
+  }
+
   function emptyState(icon, title, text, cta, href) {
     return `<div class="empty-state"><div class="empty-icon">${icons[icon] || icons.package}</div><h2>${title}</h2><p>${text}</p><a class="btn btn-primary" href="${href}">${cta} ${icons.arrow}</a></div>`;
   }
@@ -335,11 +399,13 @@
     if (STORE.whatsapp) {
       window.open(`https://wa.me/${STORE.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
     } else {
+      lastFocusedElement = document.activeElement;
       document.getElementById("message-preview").textContent = message;
       const modal = document.getElementById("message-modal");
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
       document.body.classList.add("modal-open");
+      focusFirst(modal);
     }
   }
 
@@ -351,6 +417,29 @@
     toast.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+
+  let lastFocusedElement = null;
+
+  function focusFirst(container) {
+    const target = container?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (target) setTimeout(() => target.focus(), 30);
+  }
+
+  function trapFocus(container, event) {
+    if (event.key !== "Tab" || !container) return;
+    const focusable = [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter(el => getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden");
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+
+  function restoreFocus() {
+    if (lastFocusedElement && document.contains(lastFocusedElement)) lastFocusedElement.focus();
+    lastFocusedElement = null;
   }
 
   function setupGlobalEvents() {
@@ -378,33 +467,48 @@
     });
     window.addEventListener("scroll", () => document.getElementById("site-header")?.classList.toggle("scrolled", scrollY > 8), { passive: true });
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape") { toggleMenu(false); toggleSearch(false); closeModal(); }
+      if (event.key === "Escape") { toggleMenu(false); toggleSearch(false); closeModal(); return; }
+      const menu = document.getElementById("mobile-menu");
+      const search = document.getElementById("search-overlay");
+      const modal = document.getElementById("message-modal");
+      if (modal?.classList.contains("open")) trapFocus(modal, event);
+      else if (search?.classList.contains("open")) trapFocus(search, event);
+      else if (menu?.classList.contains("open")) trapFocus(menu, event);
     });
   }
 
   function toggleMenu(open) {
     const menu = document.getElementById("mobile-menu");
     if (!menu) return;
+    const wasOpen = menu.classList.contains("open");
+    if (open && !wasOpen) lastFocusedElement = document.activeElement;
     menu.classList.toggle("open", open);
     menu.setAttribute("aria-hidden", String(!open));
     document.body.classList.toggle("menu-open", open);
+    if (open) focusFirst(menu.querySelector(".mobile-menu-panel"));
+    else if (wasOpen) restoreFocus();
   }
 
   function toggleSearch(open) {
     const overlay = document.getElementById("search-overlay");
     if (!overlay) return;
+    const wasOpen = overlay.classList.contains("open");
+    if (open && !wasOpen) lastFocusedElement = document.activeElement;
     overlay.classList.toggle("open", open);
     overlay.setAttribute("aria-hidden", String(!open));
     document.body.classList.toggle("modal-open", open);
     if (open) { const input = document.getElementById("global-search"); input.value = ""; renderGlobalSearch(""); setTimeout(() => input.focus(), 50); }
+    else if (wasOpen) restoreFocus();
   }
 
   function closeModal() {
     const modal = document.getElementById("message-modal");
     if (!modal) return;
+    const wasOpen = modal.classList.contains("open");
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
+    if (wasOpen) restoreFocus();
   }
 
   function renderGlobalSearch(term) {
@@ -418,4 +522,5 @@
   setupGlobalEvents();
   const renderers = { home: homePage, shop: shopPage, product: productPage, wishlist: wishlistPage, cart: cartPage, about: aboutPage, contact: contactPage, policies: policiesPage };
   (renderers[page] || homePage)();
+  updateSEO();
 })();

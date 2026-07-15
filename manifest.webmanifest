@@ -3,10 +3,13 @@
   "short_name": "Mitti & More",
   "description": "Handmade pottery, baskets and textiles with WhatsApp ordering.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#fcf9f3",
   "theme_color": "#f5eddf",
   "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

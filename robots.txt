@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-# Add the live sitemap URL here after connecting the final domain.
+Sitemap: https://anshyd1.github.io/mitti-more-whatsapp-catalog/sitemap.xml
