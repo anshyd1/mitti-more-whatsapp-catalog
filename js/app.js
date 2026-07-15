@@ -511,6 +511,27 @@
     if (wasOpen) restoreFocus();
   }
 
+  function setupFooterChrome() {
+  const footer = document.querySelector(".site-footer");
+  if (!footer) return;
+  const setState = visible => document.body.classList.toggle("footer-in-view", visible);
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(entries => setState(entries[0].isIntersecting), {
+      root: null,
+      threshold: 0,
+      rootMargin: "0px 0px -24px 0px"
+    });
+    observer.observe(footer);
+  } else {
+    const check = () => {
+      const rect = footer.getBoundingClientRect();
+      setState(rect.top < window.innerHeight && rect.bottom > 0);
+    };
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+  }
+}
+
   function renderGlobalSearch(term) {
     const results = document.getElementById("global-search-results");
     const query = term.trim().toLowerCase();
@@ -523,4 +544,5 @@
   const renderers = { home: homePage, shop: shopPage, product: productPage, wishlist: wishlistPage, cart: cartPage, about: aboutPage, contact: contactPage, policies: policiesPage };
   (renderers[page] || homePage)();
   updateSEO();
+  setupFooterChrome();
 })();

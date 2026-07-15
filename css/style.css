@@ -464,3 +464,26 @@ h1, h2, h3, p { margin-top: 0; }
   .brand-logo { width: 136px; flex-basis: 136px; }
   .header-actions [data-open-search] { display: none; }
 }
+
+
+/* Mobile footer chrome hotfix v3 */
+.badge-count[hidden] { display: none !important; }
+
+@media (max-width: 767px) {
+  .mobile-bottom-nav,
+  .whatsapp-float {
+    transition: transform .25s ease, opacity .2s ease;
+    will-change: transform, opacity;
+  }
+  body.footer-in-view .mobile-bottom-nav {
+    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+    opacity: 0;
+    pointer-events: none;
+  }
+  body.footer-in-view .whatsapp-float {
+    transform: translateY(96px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .site-footer { padding-bottom: 44px; }
+}
