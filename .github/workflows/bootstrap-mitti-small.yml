@@ -1,4 +1,4 @@
-name: Install and Deploy Mitti Website
+name: Apply Mitti Audit Fixes v2
 
 on:
   workflow_dispatch:
@@ -6,31 +6,37 @@ on:
 permissions:
   contents: write
   pages: write
-  id-token: write
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Verify and install website files
+      - name: Install audited website update
         shell: bash
         run: |
-          echo "cd8b25506891ed078ace2f6022d16cf222455e74ebc9c6b047162f481470be57  .github/workflows/mitti-site.tar.gz" | sha256sum --check
+          echo "239ed75e14b8c601e937634f435a3dba48efc84a8461f62865803dcb37ce3269  .github/workflows/mitti-site.tar.gz" | sha256sum --check
           tar -xzf .github/workflows/mitti-site.tar.gz -C "$GITHUB_WORKSPACE"
           test -f index.html
           test -f css/style.css
           test -f js/app.js
+          test -f assets/images/products/ceramic-coffee-mug.webp
+          test -f assets/images/products/ceramic-coffee-mug-640.webp
+          test -f sitemap.xml
 
-      - name: Validate JavaScript
+      - name: Validate update
+        shell: bash
         run: |
           node --check js/store-config.js
           node --check js/products.js
           node --check js/app.js
+          grep -q 'header-wishlist' css/style.css
+          grep -q 'application/ld+json' js/app.js
 
-      - name: Commit website files
+      - name: Commit audited website files
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -51,47 +57,52 @@ jobs:
             favicon.svg \
             manifest.webmanifest \
             robots.txt \
+            sitemap.xml \
             vercel.json \
             assets \
             css \
             js
 
           if git diff --cached --quiet; then
-            echo "Website files are already current."
+            echo "No website changes were required."
           else
-            git commit -m "Install Mitti & More website"
-            if ! git push origin HEAD:main; then
-              echo "::warning::Website is ready for Pages, but GitHub blocked the repository commit. Deployment will continue."
-            fi
+            git commit -m "Fix mobile UI, image quality and accessibility"
+            git push origin HEAD:main
           fi
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          enablement: true
-
-      - name: Prepare static website
+      - name: Request GitHub Pages rebuild
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p "$RUNNER_TEMP/site"
-          rsync -a --delete \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='node_modules' \
-            ./ "$RUNNER_TEMP/site/"
+          STATUS=$(curl -sS -o "$RUNNER_TEMP/pages-response.json" -w "%{http_code}" \
+            -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds")
 
-      - name: Upload website artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ${{ runner.temp }}/site
+          cat "$RUNNER_TEMP/pages-response.json" || true
+          if [ "$STATUS" = "201" ] || [ "$STATUS" = "202" ]; then
+            echo "GitHub Pages rebuild requested successfully."
+          else
+            echo "::warning::Website commit succeeded. Pages returned HTTP $STATUS; branch deployment may still start automatically."
+          fi
 
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Update summary
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Mitti & More audit update applied
+
+          - Mobile header overlap fixed
+          - Responsive high-resolution images added
+          - Product cards and touch targets aligned
+          - Fixed navigation/WhatsApp overlap reduced
+          - WCAG contrast issues fixed
+          - Policies overflow fixed
+          - Keyboard focus handling improved
+          - Product structured data and sitemap added
+
+          Live URL: https://anshyd1.github.io/mitti-more-whatsapp-catalog/
+          SUMMARY
