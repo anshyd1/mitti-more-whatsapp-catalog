@@ -1,4 +1,4 @@
-name: Apply Mitti Audit Fixes v2
+name: Mobile UI Hotfix v3
 
 on:
   workflow_dispatch:
@@ -8,101 +8,123 @@ permissions:
   pages: write
 
 jobs:
-  update:
+  hotfix:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install audited website update
+      - name: Fix zero badges and footer overlap
         shell: bash
         run: |
-          echo "239ed75e14b8c601e937634f435a3dba48efc84a8461f62865803dcb37ce3269  .github/workflows/mitti-site.tar.gz" | sha256sum --check
-          tar -xzf .github/workflows/mitti-site.tar.gz -C "$GITHUB_WORKSPACE"
-          test -f index.html
-          test -f css/style.css
-          test -f js/app.js
-          test -f assets/images/products/ceramic-coffee-mug.webp
-          test -f assets/images/products/ceramic-coffee-mug-640.webp
-          test -f sitemap.xml
+          python3 - <<'PY'
+          from pathlib import Path
 
-      - name: Validate update
+          css_file = Path("css/style.css")
+          css = css_file.read_text()
+          marker = "/* Mobile footer chrome hotfix v3 */"
+          css_patch = r'''
+
+          /* Mobile footer chrome hotfix v3 */
+          .badge-count[hidden] { display: none !important; }
+
+          @media (max-width: 767px) {
+            .mobile-bottom-nav,
+            .whatsapp-float {
+              transition: transform .25s ease, opacity .2s ease;
+              will-change: transform, opacity;
+            }
+            body.footer-in-view .mobile-bottom-nav {
+              transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+              opacity: 0;
+              pointer-events: none;
+            }
+            body.footer-in-view .whatsapp-float {
+              transform: translateY(96px);
+              opacity: 0;
+              pointer-events: none;
+            }
+            .site-footer { padding-bottom: 44px; }
+          }
+          '''
+          if marker not in css:
+              css_file.write_text(css + css_patch)
+
+          js_file = Path("js/app.js")
+          js = js_file.read_text()
+          footer_function = r'''  function setupFooterChrome() {
+            const footer = document.querySelector(".site-footer");
+            if (!footer) return;
+            const setState = visible => document.body.classList.toggle("footer-in-view", visible);
+            if ("IntersectionObserver" in window) {
+              const observer = new IntersectionObserver(entries => setState(entries[0].isIntersecting), {
+                root: null,
+                threshold: 0,
+                rootMargin: "0px 0px -24px 0px"
+              });
+              observer.observe(footer);
+            } else {
+              const check = () => {
+                const rect = footer.getBoundingClientRect();
+                setState(rect.top < window.innerHeight && rect.bottom > 0);
+              };
+              window.addEventListener("scroll", check, { passive: true });
+              check();
+            }
+          }
+
+          '''
+          if "function setupFooterChrome()" not in js:
+              needle = "  function renderGlobalSearch(term) {"
+              if needle not in js:
+                  raise SystemExit("Could not locate app insertion point")
+              js = js.replace(needle, footer_function + needle, 1)
+          if "  setupFooterChrome();" not in js:
+              needle = "  updateSEO();\n})();"
+              if needle not in js:
+                  raise SystemExit("Could not locate app startup point")
+              js = js.replace(needle, "  updateSEO();\n  setupFooterChrome();\n})();", 1)
+          js_file.write_text(js)
+          PY
+
+      - name: Validate hotfix
         shell: bash
         run: |
-          node --check js/store-config.js
-          node --check js/products.js
           node --check js/app.js
-          grep -q 'header-wishlist' css/style.css
-          grep -q 'application/ld+json' js/app.js
+          grep -q 'badge-count\[hidden\]' css/style.css
+          grep -q 'function setupFooterChrome' js/app.js
+          grep -q 'setupFooterChrome();' js/app.js
 
-      - name: Commit audited website files
+      - name: Commit hotfix
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add -- \
-            .gitignore \
-            README.md \
-            DEPLOYMENT.md \
-            index.html \
-            shop.html \
-            product.html \
-            wishlist.html \
-            cart.html \
-            about.html \
-            contact.html \
-            policies.html \
-            favicon.svg \
-            manifest.webmanifest \
-            robots.txt \
-            sitemap.xml \
-            vercel.json \
-            assets \
-            css \
-            js
-
+          git add css/style.css js/app.js
           if git diff --cached --quiet; then
-            echo "No website changes were required."
+            echo "Hotfix is already installed."
           else
-            git commit -m "Fix mobile UI, image quality and accessibility"
+            git commit -m "Fix mobile badge and footer navigation overlap"
             git push origin HEAD:main
           fi
 
-      - name: Request GitHub Pages rebuild
+      - name: Request Pages rebuild
+        continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          STATUS=$(curl -sS -o "$RUNNER_TEMP/pages-response.json" -w "%{http_code}" \
-            -L -X POST \
+          curl -sS -L -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds")
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds" || true
 
-          cat "$RUNNER_TEMP/pages-response.json" || true
-          if [ "$STATUS" = "201" ] || [ "$STATUS" = "202" ]; then
-            echo "GitHub Pages rebuild requested successfully."
-          else
-            echo "::warning::Website commit succeeded. Pages returned HTTP $STATUS; branch deployment may still start automatically."
-          fi
-
-      - name: Update summary
-        shell: bash
+      - name: Summary
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
-          ## Mitti & More audit update applied
-
-          - Mobile header overlap fixed
-          - Responsive high-resolution images added
-          - Product cards and touch targets aligned
-          - Fixed navigation/WhatsApp overlap reduced
-          - WCAG contrast issues fixed
-          - Policies overflow fixed
-          - Keyboard focus handling improved
-          - Product structured data and sitemap added
-
-          Live URL: https://anshyd1.github.io/mitti-more-whatsapp-catalog/
-          SUMMARY
+          echo "## Mobile UI Hotfix v3 applied" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Zero-value badges are hidden" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Bottom navigation hides when footer enters the screen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Floating WhatsApp hides over the footer" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Vercel will redeploy automatically from the new commit" >> "$GITHUB_STEP_SUMMARY"
