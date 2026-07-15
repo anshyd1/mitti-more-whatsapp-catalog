@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Verify and install website files
         shell: bash
@@ -23,9 +23,6 @@ jobs:
           test -f index.html
           test -f css/style.css
           test -f js/app.js
-          rm -f .github/workflows/bootstrap-mitti-more.yml
-          rm -f .github/workflows/bootstrap-mitti-small.yml
-          rm -f .github/workflows/mitti-site.tar.gz
 
       - name: Validate JavaScript
         run: |
@@ -38,9 +35,35 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add --all
-          git commit -m "Install Mitti & More website" || true
-          git push origin HEAD:main
+
+          git add -- \
+            .gitignore \
+            README.md \
+            DEPLOYMENT.md \
+            index.html \
+            shop.html \
+            product.html \
+            wishlist.html \
+            cart.html \
+            about.html \
+            contact.html \
+            policies.html \
+            favicon.svg \
+            manifest.webmanifest \
+            robots.txt \
+            vercel.json \
+            assets \
+            css \
+            js
+
+          if git diff --cached --quiet; then
+            echo "Website files are already current."
+          else
+            git commit -m "Install Mitti & More website"
+            if ! git push origin HEAD:main; then
+              echo "::warning::Website is ready for Pages, but GitHub blocked the repository commit. Deployment will continue."
+            fi
+          fi
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
