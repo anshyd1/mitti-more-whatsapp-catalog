@@ -1,0 +1,17 @@
+# Local development
+.DS_Store
+Thumbs.db
+*.log
+
+# Dependencies and temporary files
+node_modules/
+.tmp-*
+
+# Local editor settings
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.*
+!.env.example
