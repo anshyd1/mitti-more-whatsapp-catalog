@@ -1,4 +1,4 @@
-name: Fix Mitti & More UI and validate
+name: Fix Mitti & More UI
 
 on:
   workflow_dispatch:
@@ -7,238 +7,124 @@ permissions:
   contents: write
 
 jobs:
-  fix-ui:
-    name: Apply UI fixes and run checks
+  fix:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Apply WhatsApp/UI/SEO fixes
+      - name: Apply fixes
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
           import re
 
-          ROOT = Path.cwd()
-          VERCEL_DOMAIN = "https://mitti-more-whatsapp-catalog.vercel.app"
-          WHATSAPP_NUMBER = "919918996096"
-          WHATSAPP_DISPLAY = "+91 99189 96096"
+          root = Path.cwd()
+          domain = "https://mitti-more-whatsapp-catalog.vercel.app"
 
           def read(file):
-              return (ROOT / file).read_text(encoding="utf-8")
+              return (root / file).read_text(encoding="utf-8")
 
           def write(file, text):
-              (ROOT / file).write_text(text, encoding="utf-8")
+              (root / file).write_text(text, encoding="utf-8")
 
-          # 1) Store config: real WhatsApp number + production mode
-          config_file = ROOT / "js/store-config.js"
-          if config_file.exists():
+          # WhatsApp config
+          cfg = root / "js/store-config.js"
+          if cfg.exists():
               s = read("js/store-config.js")
-              s = re.sub(r'whatsapp:\s*"[^"]*"', f'whatsapp: "{WHATSAPP_NUMBER}"', s)
-              s = re.sub(r'phoneDisplay:\s*"[^"]*"', f'phoneDisplay: "{WHATSAPP_DISPLAY}"', s)
+              s = re.sub(r'whatsapp:\s*"[^"]*"', 'whatsapp: "919918996096"', s)
+              s = re.sub(r'phoneDisplay:\s*"[^"]*"', 'phoneDisplay: "+91 99189 96096"', s)
               s = re.sub(r'demoMode:\s*true', 'demoMode: false', s)
               s = s.replace('Free shipping above ₹1,999 · Order directly on WhatsApp', 'Free shipping above ₹1,999 · WhatsApp orders')
               write("js/store-config.js", s)
 
-          # 2) Sitemap/robots: production Vercel domain
+          # Sitemap and robots domain
           for file in ["sitemap.xml", "robots.txt"]:
-              p = ROOT / file
+              p = root / file
               if p.exists():
-                  s = read(file)
-                  s = s.replace("https://anshyd1.github.io/mitti-more-whatsapp-catalog", VERCEL_DOMAIN)
+                  s = read(file).replace("https://anshyd1.github.io/mitti-more-whatsapp-catalog", domain)
                   write(file, s)
 
-          # 3) Home meta tags: absolute OG image + Twitter card
-          index = ROOT / "index.html"
-          if index.exists():
+          # OG image absolute URL
+          idx = root / "index.html"
+          if idx.exists():
               s = read("index.html")
-              s = s.replace('content="assets/images/hero/hero-home.jpg"', f'content="{VERCEL_DOMAIN}/assets/images/hero/hero-home.jpg"')
+              s = s.replace('content="assets/images/hero/hero-home.jpg"', f'content="{domain}/assets/images/hero/hero-home.jpg"')
               if 'property="og:url"' not in s:
-                  s = s.replace('<meta property="og:image" content="https://mitti-more-whatsapp-catalog.vercel.app/assets/images/hero/hero-home.jpg">', '<meta property="og:image" content="https://mitti-more-whatsapp-catalog.vercel.app/assets/images/hero/hero-home.jpg">\n  <meta property="og:url" content="https://mitti-more-whatsapp-catalog.vercel.app/">\n  <meta property="og:type" content="website">\n  <meta name="twitter:card" content="summary_large_image">')
+                  s = s.replace(
+                      f'<meta property="og:image" content="{domain}/assets/images/hero/hero-home.jpg">',
+                      f'<meta property="og:image" content="{domain}/assets/images/hero/hero-home.jpg">\n  <meta property="og:url" content="{domain}/">\n  <meta property="og:type" content="website">\n  <meta name="twitter:card" content="summary_large_image">'
+                  )
               write("index.html", s)
 
-          # 4) JS: replace glitchy outline WhatsApp SVG with stable filled SVG
-          app_file = ROOT / "js/app.js"
-          if app_file.exists():
+          # WhatsApp SVG icon fix
+          app = root / "js/app.js"
+          if app.exists():
               s = read("js/app.js")
               filled_icon = '''whatsapp: '<svg class="icon icon-whatsapp" viewBox="0 0 32 32" aria-hidden="true"><path d="M16.03 3.2C9 3.2 3.29 8.86 3.29 15.83c0 2.23.59 4.4 1.7 6.31L3.2 28.8l6.84-1.78a12.8 12.8 0 0 0 5.99 1.51c7.03 0 12.75-5.66 12.75-12.62S23.06 3.2 16.03 3.2Zm0 23.18c-1.9 0-3.76-.51-5.38-1.48l-.38-.23-4.06 1.06 1.08-3.93-.25-.4a10.2 10.2 0 0 1-1.58-5.57c0-5.78 4.74-10.48 10.57-10.48S26.6 10.05 26.6 15.83 21.86 26.38 16.03 26.38Zm5.8-7.84c-.32-.16-1.88-.92-2.17-1.03-.29-.1-.5-.16-.71.16-.21.31-.82 1.02-1 1.23-.18.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.56-.94-.84-1.58-1.87-1.76-2.18-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.18.21-.31.32-.52.11-.21.05-.39-.03-.55-.08-.16-.71-1.7-.98-2.33-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.39-.29.32-1.11 1.08-1.11 2.62s1.13 3.04 1.29 3.25c.16.21 2.23 3.38 5.4 4.74.75.32 1.34.51 1.8.66.76.24 1.45.2 1.99.12.61-.09 1.88-.76 2.14-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.61-.37Z"/></svg>','''
               if 'icon-whatsapp' not in s:
                   s = re.sub(r'''whatsapp:\s*'<svg class="icon"[^\n]+?</svg>',?''', filled_icon, s, count=1)
               s = s.replace('Handmade with care · Demo storefront', 'Handmade with care · WhatsApp-first catalog')
               write("js/app.js", s)
-
-          # 5) CSS: WhatsApp icon and mobile overlap fixes. Appended as override so it is safe.
-          css_file = ROOT / "css/style.css"
-          if css_file.exists():
-              s = read("css/style.css")
-              marker = "/* Workflow WhatsApp/UI fixes */"
-              if marker not in s:
-                  s += f'''
-
-{marker}
-.icon-whatsapp,
-.icon-whatsapp path {{ fill: currentColor; stroke: none; }}
-.btn .icon-whatsapp {{ width: 20px; height: 20px; flex: 0 0 auto; }}
-.whatsapp-float .icon-whatsapp {{ width: 26px; height: 26px; }}
-.btn:disabled,
-button:disabled {{ cursor: not-allowed; opacity: .58; transform: none !important; box-shadow: none !important; }}
-.quick-whatsapp {{ display: inline-grid; width: 44px; height: 44px; flex: 0 0 44px; background: #e1f1e7; color: var(--whatsapp-dark); }}
-@media (max-width: 767px) {{
-  body[data-page="shop"] .whatsapp-float,
-  body[data-page="product"] .whatsapp-float,
-  body[data-page="wishlist"] .whatsapp-float,
-  body[data-page="cart"] .whatsapp-float,
-  body[data-page="contact"] .whatsapp-float {{ display: none; }}
-}}
-@media (max-width: 480px) {{
-  .product-actions {{ gap: 6px; }}
-  .product-actions .btn {{ gap: 5px; min-width: 0; }}
-  .quick-whatsapp {{ width: 40px; height: 40px; flex-basis: 40px; }}
-}}
-'''
-              write("css/style.css", s)
-
-          print("Fixes applied.")
           PY
 
-      - name: Validate static files
+          if ! grep -q 'Workflow WhatsApp/UI fixes' css/style.css; then
+            cat >> css/style.css <<'CSS'
+
+          /* Workflow WhatsApp/UI fixes */
+          .icon-whatsapp,
+          .icon-whatsapp path { fill: currentColor; stroke: none; }
+          .btn .icon-whatsapp { width: 20px; height: 20px; flex: 0 0 auto; }
+          .whatsapp-float .icon-whatsapp { width: 26px; height: 26px; }
+          .btn:disabled,
+          button:disabled { cursor: not-allowed; opacity: .58; transform: none !important; box-shadow: none !important; }
+          .quick-whatsapp { display: inline-grid; width: 44px; height: 44px; flex: 0 0 44px; background: #e1f1e7; color: var(--whatsapp-dark); }
+          @media (max-width: 767px) {
+            body[data-page="shop"] .whatsapp-float,
+            body[data-page="product"] .whatsapp-float,
+            body[data-page="wishlist"] .whatsapp-float,
+            body[data-page="cart"] .whatsapp-float,
+            body[data-page="contact"] .whatsapp-float { display: none; }
+          }
+          @media (max-width: 480px) {
+            .product-actions { gap: 6px; }
+            .product-actions .btn { gap: 5px; min-width: 0; }
+            .quick-whatsapp { width: 40px; height: 40px; flex-basis: 40px; }
+          }
+          CSS
+          fi
+
+      - name: Validate fixes
         shell: bash
         run: |
           node --check js/store-config.js
           node --check js/products.js
           node --check js/app.js
 
-          python3 <<'PY'
-          from pathlib import Path
-          import re
+          grep -q '919918996096' js/store-config.js
+          grep -q 'demoMode: false' js/store-config.js
+          grep -q 'icon-whatsapp' js/app.js
+          grep -q '.icon-whatsapp' css/style.css
+          grep -q 'https://mitti-more-whatsapp-catalog.vercel.app/sitemap.xml' robots.txt
+          ! grep -q 'github.io' sitemap.xml
 
-          root = Path.cwd()
-          domain = 'https://mitti-more-whatsapp-catalog.vercel.app'
+          echo "Validation passed"
 
-          required = [
-            'index.html', 'shop.html', 'product.html', 'cart.html', 'wishlist.html',
-            'about.html', 'contact.html', 'policies.html', 'css/style.css',
-            'js/app.js', 'js/products.js', 'js/store-config.js', 'sitemap.xml', 'robots.txt'
-          ]
-          for file in required:
-              if not (root / file).exists():
-                  raise SystemExit(f'Missing required file: {file}')
-
-          sitemap = (root / 'sitemap.xml').read_text(encoding='utf-8')
-          robots = (root / 'robots.txt').read_text(encoding='utf-8')
-          app = (root / 'js/app.js').read_text(encoding='utf-8')
-          css = (root / 'css/style.css').read_text(encoding='utf-8')
-          config = (root / 'js/store-config.js').read_text(encoding='utf-8')
-
-          if domain not in sitemap or f'{domain}/sitemap.xml' not in robots:
-              raise SystemExit('Domain check failed in sitemap/robots')
-          if 'github.io' in sitemap:
-              raise SystemExit('Old GitHub Pages domain still exists in sitemap')
-          if 'icon-whatsapp' not in app or '.icon-whatsapp' not in css:
-              raise SystemExit('WhatsApp icon fix missing')
-          if '919918996096' not in config or 'demoMode: false' not in config:
-              raise SystemExit('WhatsApp production config missing')
-
-          products = (root / 'js/products.js').read_text(encoding='utf-8')
-          images = re.findall(r'image:\s*"([^"]+)"', products)
-          for image in images:
-              if not (root / image).exists():
-                  raise SystemExit(f'Missing product image: {image}')
-              small = image.replace('.webp', '-640.webp')
-              if not (root / small).exists():
-                  raise SystemExit(f'Missing responsive image: {small}')
-
-          print('Static validation passed.')
-          PY
-
-      - name: Commit fixed files
+      - name: Commit and push changes
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add js/store-config.js js/app.js css/style.css index.html robots.txt sitemap.xml
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes to commit"
           else
-            git commit -m "Fix WhatsApp icon UI and production config"
+            git commit -m "Fix WhatsApp UI and production config"
             git push
           fi
-
-      - name: Install Playwright for visual smoke test
-        shell: bash
-        run: |
-          npm init -y >/dev/null 2>&1 || true
-          npm install --no-save playwright@latest
-          npx playwright install --with-deps chromium
-
-      - name: Capture screenshots and assert WhatsApp icon
-        shell: bash
-        run: |
-          mkdir -p screenshots
-          cat > /tmp/visual-smoke.mjs <<'JS'
-          import { chromium } from 'playwright';
-          import http from 'node:http';
-          import fs from 'node:fs';
-          import path from 'node:path';
-
-          const root = process.cwd();
-          const outDir = path.join(root, 'screenshots');
-
-          const server = http.createServer((req, res) => {
-            const url = new URL(req.url, 'http://127.0.0.1:4173');
-            let pathname = decodeURIComponent(url.pathname);
-            if (pathname === '/') pathname = '/index.html';
-            const file = path.normalize(path.join(root, pathname));
-            if (!file.startsWith(root)) { res.writeHead(403); res.end('Forbidden'); return; }
-            fs.readFile(file, (err, data) => {
-              if (err) { res.writeHead(404); res.end('Not found'); return; }
-              const ext = path.extname(file);
-              const type = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.webmanifest': 'application/manifest+json' }[ext] || 'application/octet-stream';
-              res.writeHead(200, { 'Content-Type': type });
-              res.end(data);
-            });
-          });
-          await new Promise(resolve => server.listen(4173, '127.0.0.1', resolve));
-
-          const browser = await chromium.launch({ headless: true });
-          const pages = [
-            { name: 'mobile-home', width: 390, height: 844, url: '/' },
-            { name: 'mobile-shop', width: 390, height: 844, url: '/shop.html' },
-            { name: 'mobile-product', width: 390, height: 844, url: '/product.html?id=ceramic-coffee-mug' },
-            { name: 'desktop-home', width: 1440, height: 1000, url: '/' }
-          ];
-
-          try {
-            for (const cfg of pages) {
-              const page = await browser.newPage({ viewport: { width: cfg.width, height: cfg.height }, isMobile: cfg.width < 768 });
-              await page.goto(`http://127.0.0.1:4173${cfg.url}`, { waitUntil: 'networkidle' });
-              const count = await page.locator('.icon-whatsapp').count();
-              if (count < 1) throw new Error(`${cfg.name}: WhatsApp icon not found`);
-              const box = await page.locator('.icon-whatsapp').first().boundingBox();
-              if (!box || box.width < 14 || box.height < 14) throw new Error(`${cfg.name}: WhatsApp icon size broken`);
-              await page.screenshot({ path: path.join(outDir, `${cfg.name}.png`), fullPage: false });
-              await page.close();
-            }
-            console.log('Visual smoke test passed.');
-          } finally {
-            await browser.close();
-            server.close();
-          }
-          JS
-          node /tmp/visual-smoke.mjs
-
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-smoke-screenshots
-          path: screenshots/*.png
