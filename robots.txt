@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://anshyd1.github.io/mitti-more-whatsapp-catalog/sitemap.xml
+Sitemap: https://mitti-more-whatsapp-catalog.vercel.app/sitemap.xml

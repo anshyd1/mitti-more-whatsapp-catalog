@@ -18,7 +18,7 @@
     home: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>',
     grid: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>',
     store: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v10h16V10"/><path d="M3 4h18l-2 6a3 3 0 0 1-5 1 3 3 0 0 1-4 0 3 3 0 0 1-5-1L3 4Z"/><path d="M9 20v-5h6v5"/></svg>',
-    whatsapp: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.7Z"/><path d="M8.2 7.5c.2-.4.4-.4.7-.4h.4c.2 0 .4.1.5.4l.8 2c.1.2 0 .5-.1.7l-.6.8c-.2.2-.1.4 0 .6.7 1.2 1.7 2.1 3 2.7.2.1.4.1.6-.1l.9-1.1c.2-.2.4-.2.7-.1l2 .9c.2.1.4.3.4.5-.1.8-.4 1.5-1 2-.6.5-1.4.8-2.2.7-1.2-.2-2.4-.7-3.5-1.3-1.6-1-3-2.3-4-3.9-.6-1-.9-2.1-.8-3.2 0-.5.2-.9.4-1.2Z"/></svg>',
+    whatsapp: '<svg class="icon icon-whatsapp" viewBox="0 0 32 32" aria-hidden="true"><path d="M16.03 3.2C9 3.2 3.29 8.86 3.29 15.83c0 2.23.59 4.4 1.7 6.31L3.2 28.8l6.84-1.78a12.8 12.8 0 0 0 5.99 1.51c7.03 0 12.75-5.66 12.75-12.62S23.06 3.2 16.03 3.2Zm0 23.18c-1.9 0-3.76-.51-5.38-1.48l-.38-.23-4.06 1.06 1.08-3.93-.25-.4a10.2 10.2 0 0 1-1.58-5.57c0-5.78 4.74-10.48 10.57-10.48S26.6 10.05 26.6 15.83 21.86 26.38 16.03 26.38Zm5.8-7.84c-.32-.16-1.88-.92-2.17-1.03-.29-.1-.5-.16-.71.16-.21.31-.82 1.02-1 1.23-.18.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.56-.94-.84-1.58-1.87-1.76-2.18-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.18.21-.31.32-.52.11-.21.05-.39-.03-.55-.08-.16-.71-1.7-.98-2.33-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.39-.29.32-1.11 1.08-1.11 2.62s1.13 3.04 1.29 3.25c.16.21 2.23 3.38 5.4 4.74.75.32 1.34.51 1.8.66.76.24 1.45.2 1.99.12.61-.09 1.88-.76 2.14-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.61-.37Z"/></svg>',
     leaf: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4C11 4 5 8 5 15c0 2.8 2.2 5 5 5 7 0 10-7 10-16Z"/><path d="M4 21c2-6 6-10 12-13"/></svg>',
     truck: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>',
     package: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7M12 11v10"/></svg>',
@@ -97,7 +97,7 @@
             <div class="footer-col"><h3>About</h3><div class="footer-links"><a href="about.html">Our story</a><a href="contact.html">Contact us</a><a href="policies.html#shipping">Shipping</a><a href="policies.html#returns">Returns</a></div></div>
             <div class="footer-col"><h3>Visit</h3><div class="footer-links"><a href="${STORE.mapsUrl}">${STORE.address}</a><a href="contact.html">${STORE.hours}</a><a href="mailto:${STORE.email}">${STORE.email}</a><button class="btn btn-whatsapp btn-sm" data-general-wa>${icons.whatsapp} WhatsApp us</button></div></div>
           </div>
-          <div class="footer-bottom"><span>© ${new Date().getFullYear()} ${STORE.name}. All rights reserved.</span><span>Handmade with care · Demo storefront</span></div>
+          <div class="footer-bottom"><span>© ${new Date().getFullYear()} ${STORE.name}. All rights reserved.</span><span>Handmade with care · WhatsApp-first catalog</span></div>
         </div>
       </footer>
       <nav class="mobile-bottom-nav" aria-label="Mobile navigation">

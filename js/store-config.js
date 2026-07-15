@@ -3,8 +3,8 @@ window.STORE_CONFIG = {
   shortName: "Mitti",
   tagline: "Handmade for slower, warmer living.",
   description: "Thoughtfully curated pottery, baskets and textiles made with natural materials.",
-  whatsapp: "",
-  phoneDisplay: "WhatsApp number जोड़ें",
+  whatsapp: "919918996096",
+  phoneDisplay: "+91 99189 96096",
   email: "hello@mittiandmore.example",
   address: "Gorakhpur, Uttar Pradesh",
   hours: "Mon–Sat · 10:00 AM–7:00 PM",
@@ -14,6 +14,6 @@ window.STORE_CONFIG = {
   instagram: "#",
   facebook: "#",
   mapsUrl: "#",
-  announcement: "Free shipping above ₹1,999 · Order directly on WhatsApp",
-  demoMode: true
+  announcement: "Free shipping above ₹1,999 · WhatsApp orders",
+  demoMode: false
 };

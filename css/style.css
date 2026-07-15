@@ -487,3 +487,24 @@ h1, h2, h3, p { margin-top: 0; }
   }
   .site-footer { padding-bottom: 44px; }
 }
+
+/* Workflow WhatsApp/UI fixes */
+.icon-whatsapp,
+.icon-whatsapp path { fill: currentColor; stroke: none; }
+.btn .icon-whatsapp { width: 20px; height: 20px; flex: 0 0 auto; }
+.whatsapp-float .icon-whatsapp { width: 26px; height: 26px; }
+.btn:disabled,
+button:disabled { cursor: not-allowed; opacity: .58; transform: none !important; box-shadow: none !important; }
+.quick-whatsapp { display: inline-grid; width: 44px; height: 44px; flex: 0 0 44px; background: #e1f1e7; color: var(--whatsapp-dark); }
+@media (max-width: 767px) {
+  body[data-page="shop"] .whatsapp-float,
+  body[data-page="product"] .whatsapp-float,
+  body[data-page="wishlist"] .whatsapp-float,
+  body[data-page="cart"] .whatsapp-float,
+  body[data-page="contact"] .whatsapp-float { display: none; }
+}
+@media (max-width: 480px) {
+  .product-actions { gap: 6px; }
+  .product-actions .btn { gap: 5px; min-width: 0; }
+  .quick-whatsapp { width: 40px; height: 40px; flex-basis: 40px; }
+}
