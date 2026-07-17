@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5eddf">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Edit WhatsApp ad copy, CTA and preview without touching code.">
+  <title>Ad Editor — Mitti & More</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .editor-wrap{max-width:1200px;margin:0 auto;padding:24px 16px 80px}
+    .editor-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+    .editor-panel,.editor-preview{background:#fff;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow-sm)}
+    .editor-panel{padding:22px;position:sticky;top:92px}
+    .editor-preview{overflow:hidden}
+    .editor-label{display:block;font-size:.82rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin:14px 0 8px;color:var(--ink)}
+    .editor-input,.editor-textarea,.editor-select{width:100%;border:1px solid var(--line);border-radius:16px;padding:12px 14px;font:inherit;background:#fff;color:var(--ink)}
+    .editor-textarea{min-height:88px;resize:vertical}
+    .editor-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .editor-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .editor-note{font-size:.88rem;color:var(--muted);margin-top:10px}
+    .preview-shell{display:grid;grid-template-columns:1.1fr .9fr;min-height:540px}
+    .preview-copy{padding:40px;display:flex;flex-direction:column;justify-content:center}
+    .preview-badge{display:inline-flex;align-items:center;padding:9px 14px;border-radius:999px;font-size:.8rem;font-weight:700;margin-bottom:14px}
+    .preview-title{font-size:clamp(2rem,4vw,4rem);line-height:1.02;margin:0 0 14px;font-family:Georgia,serif}
+    .preview-sub{font-size:1.05rem;line-height:1.65;color:var(--muted);margin:0}
+    .preview-price{display:flex;gap:12px;align-items:center;margin:18px 0 10px}
+    .preview-offer{font-size:2rem;font-weight:800}
+    .preview-compare{text-decoration:line-through;color:var(--muted)}
+    .preview-cta{display:inline-flex;align-items:center;justify-content:center;width:max-content;padding:14px 18px;border-radius:16px;color:#fff;font-weight:800;text-decoration:none;margin-top:10px}
+    .preview-meta{margin-top:14px;font-size:.9rem;color:var(--muted)}
+    .preview-image{min-height:320px;background:#e7ded0 center/cover no-repeat}
+    .status-bar{padding:14px 18px;border-top:1px solid var(--line);font-size:.9rem;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    @media (max-width: 900px){
+      .editor-grid,.preview-shell{grid-template-columns:1fr}
+      .editor-panel{position:static}
+    }
+  </style>
+  <script src="js/store-config.js" defer></script>
+  <script src="js/sheet-api.js" defer></script>
+  <script src="js/ad-editor.js" defer></script>
+</head>
+<body data-page="ad-editor">
+  <main class="editor-wrap">
+    <div style="margin-bottom:18px">
+      <p class="eyebrow">No-code admin</p>
+      <h1 class="section-title" style="margin-bottom:8px">Self-editable ad preview</h1>
+      <p class="section-intro">Headline, price, CTA, image aur WhatsApp prefill yahin se edit karo. API connect hone par same data live push bhi ho sakta hai.</p>
+    </div>
+
+    <div class="editor-grid">
+      <section class="editor-panel">
+        <label class="editor-label" for="ad-id">Ad ID</label>
+        <input class="editor-input" id="ad-id" value="AD001">
+
+        <label class="editor-label" for="badge">Badge</label>
+        <input class="editor-input" id="badge" value="Limited Slots">
+
+        <label class="editor-label" for="headline">Headline</label>
+        <textarea class="editor-textarea" id="headline">WhatsApp pe Catalog + Order</textarea>
+
+        <label class="editor-label" for="subheadline">Subheadline</label>
+        <textarea class="editor-textarea" id="subheadline">Google Sheet pe track. Chhoti dukaan ke liye simple setup.</textarea>
+
+        <div class="editor-row">
+          <div>
+            <label class="editor-label" for="offer-price">Offer price</label>
+            <input class="editor-input" id="offer-price" value="1999">
+          </div>
+          <div>
+            <label class="editor-label" for="compare-price">Compare price</label>
+            <input class="editor-input" id="compare-price" value="3999">
+          </div>
+        </div>
+
+        <div class="editor-row">
+          <div>
+            <label class="editor-label" for="cta-text">CTA text</label>
+            <input class="editor-input" id="cta-text" value="Message Karein">
+          </div>
+          <div>
+            <label class="editor-label" for="theme">Theme</label>
+            <select class="editor-select" id="theme">
+              <option value="#166534">Green</option>
+              <option value="#111827">Black</option>
+              <option value="#7c3aed">Purple</option>
+              <option value="#b45309">Amber</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="editor-label" for="image-url">Image URL</label>
+        <input class="editor-input" id="image-url" value="assets/images/hero/hero-home.jpg">
+
+        <div class="editor-row">
+          <div>
+            <label class="editor-label" for="wa-number">WhatsApp number</label>
+            <input class="editor-input" id="wa-number" value="919918996096">
+          </div>
+          <div>
+            <label class="editor-label" for="active">Active</label>
+            <select class="editor-select" id="active">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="editor-label" for="wa-prefill">WhatsApp prefill</label>
+        <textarea class="editor-textarea" id="wa-prefill">Namaste, demo bhejiye</textarea>
+
+        <div class="editor-actions">
+          <button class="btn btn-primary" id="preview-btn" type="button">Update preview</button>
+          <button class="btn btn-soft" id="save-local-btn" type="button">Save local</button>
+          <button class="btn btn-whatsapp" id="push-live-btn" type="button">Save / push live</button>
+          <button class="btn btn-outline" id="copy-json-btn" type="button">Copy JSON</button>
+        </div>
+        <p class="editor-note" id="editor-status">Local preview ready. API na ho to data browser me save hoga.</p>
+      </section>
+
+      <section class="editor-preview">
+        <div class="preview-shell">
+          <div class="preview-copy">
+            <span class="preview-badge" id="p-badge">Limited Slots</span>
+            <h2 class="preview-title" id="p-headline">WhatsApp pe Catalog + Order</h2>
+            <p class="preview-sub" id="p-subheadline">Google Sheet pe track. Chhoti dukaan ke liye simple setup.</p>
+            <div class="preview-price">
+              <span class="preview-offer" id="p-offer">₹1999</span>
+              <span class="preview-compare" id="p-compare">₹3999</span>
+            </div>
+            <a class="preview-cta" id="p-cta" href="#" target="_blank" rel="noopener">Message Karein</a>
+            <div class="preview-meta">2–3 working days me live · 50% advance · Small shops ke liye</div>
+          </div>
+          <div class="preview-image" id="p-image"></div>
+        </div>
+        <div class="status-bar">
+          <span id="mode-text">Mode: Local preview</span>
+          <span id="queue-text">Lead queue: not checked</span>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

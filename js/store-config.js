@@ -15,5 +15,20 @@ window.STORE_CONFIG = {
   facebook: "#",
   mapsUrl: "#",
   announcement: "Free shipping above ₹1,999 · WhatsApp orders",
-  demoMode: false
+  demoMode: false,
+  apiBase: "https://script.google.com/macros/s/AKfycbzrmHUPMbNnvYO5sNmJO5_BI3Nr_WfkVMUajoLmMvC9P77jl1FBhiaw4qu1KEj8OeDMtQ/exec",
+  defaultAd: {
+    ad_id: "AD001",
+    active: "Yes",
+    badge: "Limited Slots",
+    headline: "WhatsApp pe Catalog + Order",
+    subheadline: "Google Sheet pe track. Chhoti dukaan ke liye simple setup.",
+    offer_price: "1999",
+    compare_price: "3999",
+    cta_text: "Message Karein",
+    image_url: "assets/images/hero/hero-home.jpg",
+    wa_number: "919918996096",
+    wa_prefill: "Namaste, demo bhejiye",
+    theme: "#166534"
+  }
 };

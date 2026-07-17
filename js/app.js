@@ -8,6 +8,7 @@
   const CUSTOMER_KEY = "mitti-more-customer-v1";
   const page = document.body.dataset.page || "home";
   const root = document.getElementById("page-root");
+  const API = window.MITTI_API || null;
 
   const icons = {
     search: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m16.5 16.5 4 4"/></svg>',
@@ -44,16 +45,66 @@
     catch { return fallback; }
   }
 
-  function getCart() { return safeJSON(CART_KEY, []); }
-  function setCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateShellCounts(); }
-  function getWishlist() { return safeJSON(WISHLIST_KEY, []); }
-  function setWishlist(ids) { localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids)); updateShellCounts(); }
   function getProduct(id) { return PRODUCTS.find(product => product.id === id); }
-  function cartCount() { return getCart().reduce((sum, item) => sum + item.qty, 0); }
-  function cartSubtotal() { return getCart().reduce((sum, item) => sum + ((getProduct(item.id)?.price || 0) * item.qty), 0); }
+
+  function normalizeQty(value) {
+    const qty = Number.parseInt(value, 10);
+    return Number.isFinite(qty) && qty > 0 ? qty : 1;
+  }
+
+  function normalizeCart(cart) {
+    return (Array.isArray(cart) ? cart : [])
+      .map(item => ({ id: item?.id, qty: normalizeQty(item?.qty) }))
+      .filter(item => getProduct(item.id))
+      .map(item => {
+        const product = getProduct(item.id);
+        const stock = Math.max(0, Number(product?.stock) || 0);
+        if (stock === 0) return null;
+        return { id: item.id, qty: Math.min(item.qty, stock) };
+      })
+      .filter(Boolean);
+  }
+
+  function getCart() {
+    const raw = safeJSON(CART_KEY, []);
+    const normalized = normalizeCart(raw);
+    if (JSON.stringify(raw) !== JSON.stringify(normalized)) {
+      localStorage.setItem(CART_KEY, JSON.stringify(normalized));
+    }
+    return normalized;
+  }
+
+  function setCart(cart) {
+    localStorage.setItem(CART_KEY, JSON.stringify(normalizeCart(cart)));
+    updateShellCounts();
+  }
+
+  function getWishlist() { return safeJSON(WISHLIST_KEY, []).filter(id => !!getProduct(id)); }
+  function setWishlist(ids) { localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids.filter(id => !!getProduct(id)))); updateShellCounts(); }
+  function cartCount() { return getCart().reduce((sum, item) => sum + normalizeQty(item.qty), 0); }
+  function cartSubtotal() { return getCart().reduce((sum, item) => sum + ((getProduct(item.id)?.price || 0) * normalizeQty(item.qty)), 0); }
+  function isRealLink(url) { return typeof url === "string" && /^(https?:\/\/|mailto:|tel:)/i.test(url) && url !== "#"; }
+
+  async function saveLeadRecord(payload) {
+    if (!API?.saveLead) return { ok: false, skipped: true };
+    try {
+      return await API.saveLead(payload);
+    } catch {
+      return { ok: false, queued: false };
+    }
+  }
 
   function shell() {
     const active = key => page === key ? "active" : "";
+    const socialLinks = [
+      isRealLink(STORE.instagram) ? `<a class="icon-btn" href="${STORE.instagram}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>` : "",
+      isRealLink(STORE.facebook) ? `<a class="icon-btn" href="${STORE.facebook}" target="_blank" rel="noopener" aria-label="Facebook">f</a>` : ""
+    ].join("");
+    const visitLink = isRealLink(STORE.mapsUrl)
+      ? `<a href="${STORE.mapsUrl}" target="_blank" rel="noopener">${STORE.address}</a>`
+      : `<span>${STORE.address}</span>`;
+    const supportMeta = API?.hasApi?.() ? `<span>Sheet CRM connected</span>` : `<span>Lead queue active · connect Sheet later</span>`;
+
     document.body.insertAdjacentHTML("afterbegin", `
       <aside class="announcement" aria-label="Store announcement">${STORE.announcement}</aside>
       <header class="site-header" id="site-header">
@@ -92,12 +143,12 @@
       <footer class="site-footer">
         <div class="container">
           <div class="footer-grid">
-            <div class="footer-brand"><img src="assets/brand/logo.svg" alt="${STORE.name}"><p>${STORE.description} Each piece is selected to add warmth, texture and meaning to everyday spaces.</p><div class="footer-social"><a class="icon-btn" href="${STORE.instagram}" aria-label="Instagram">IG</a><a class="icon-btn" href="${STORE.facebook}" aria-label="Facebook">f</a></div></div>
+            <div class="footer-brand"><img src="assets/brand/logo.svg" alt="${STORE.name}"><p>${STORE.description} Each piece is selected to add warmth, texture and meaning to everyday spaces.</p>${socialLinks ? `<div class="footer-social">${socialLinks}</div>` : ""}</div>
             <div class="footer-col"><h3>Shop</h3><div class="footer-links"><a href="shop.html">All products</a><a href="shop.html?category=Pottery">Pottery</a><a href="shop.html?category=Baskets">Baskets</a><a href="shop.html?category=Textiles">Textiles</a><a href="shop.html?filter=new">New arrivals</a></div></div>
-            <div class="footer-col"><h3>About</h3><div class="footer-links"><a href="about.html">Our story</a><a href="contact.html">Contact us</a><a href="policies.html#shipping">Shipping</a><a href="policies.html#returns">Returns</a></div></div>
-            <div class="footer-col"><h3>Visit</h3><div class="footer-links"><a href="${STORE.mapsUrl}">${STORE.address}</a><a href="contact.html">${STORE.hours}</a><a href="mailto:${STORE.email}">${STORE.email}</a><button class="btn btn-whatsapp btn-sm" data-general-wa>${icons.whatsapp} WhatsApp us</button></div></div>
+            <div class="footer-col"><h3>About</h3><div class="footer-links"><a href="about.html">Our story</a><a href="contact.html">Contact us</a><a href="policies.html#shipping">Shipping</a><a href="policies.html#returns">Returns</a><a href="ad-editor.html">Ad editor</a></div></div>
+            <div class="footer-col"><h3>Visit</h3><div class="footer-links">${visitLink}<a href="contact.html">${STORE.hours}</a><a href="mailto:${STORE.email}">${STORE.email}</a><button class="btn btn-whatsapp btn-sm" data-general-wa>${icons.whatsapp} WhatsApp us</button></div></div>
           </div>
-          <div class="footer-bottom"><span>© ${new Date().getFullYear()} ${STORE.name}. All rights reserved.</span><span>Handmade with care · WhatsApp-first catalog</span></div>
+          <div class="footer-bottom"><span>© ${new Date().getFullYear()} ${STORE.name}. All rights reserved.</span><span>Handmade with care · WhatsApp-first catalog</span>${supportMeta}</div>
         </div>
       </footer>
       <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -208,7 +259,16 @@
 
   function productPage() {
     const id = new URLSearchParams(location.search).get("id");
-    const product = getProduct(id) || PRODUCTS[0];
+    const product = getProduct(id);
+    if (!product) {
+      document.title = `Product not found — ${STORE.name}`;
+      const robots = document.querySelector('meta[name="robots"]') || document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      robots.setAttribute('content', 'noindex');
+      if (!robots.parentNode) document.head.appendChild(robots);
+      root.innerHTML = `<section class="page-hero"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><a href="shop.html">Shop</a><span>/</span><span>Not found</span></div><p class="eyebrow">Product unavailable</p><h1>That product is no longer available.</h1><p>Please explore the latest collection instead.</p></div></section><section class="section"><div class="container">${emptyState("package", "Product not found", "This item may have been removed or renamed.", "Back to shop", "shop.html")}</div></section>`;
+      return;
+    }
     document.title = `${product.name} — ${STORE.name}`;
     const descriptionMeta = document.querySelector('meta[name="description"]');
     if (descriptionMeta) descriptionMeta.content = product.shortDescription;
@@ -244,10 +304,22 @@
       root.innerHTML = `
         <section class="page-hero"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Cart</span></div><p class="eyebrow">Your selection</p><h1>Your cart.</h1><p>Review quantities and send the final list directly on WhatsApp.</p></div></section>
         <section class="section"><div class="container cart-layout"><div class="cart-items">${cart.map(item => { const product = getProduct(item.id); return `<article class="cart-item"><a href="product.html?id=${product.id}"><img src="${product.image}" alt="${product.name}"></a><div><div class="cart-item-head"><div><h3><a href="product.html?id=${product.id}">${product.name}</a></h3><div class="cart-item-price">${formatPrice(product.price)} each</div></div><button class="icon-btn remove-btn" data-cart-remove="${product.id}" aria-label="Remove ${product.name}">${icons.trash}</button></div><div class="cart-item-actions"><div class="quantity-control"><button data-cart-minus="${product.id}" aria-label="Decrease quantity">−</button><span>${item.qty}</span><button data-cart-plus="${product.id}" aria-label="Increase quantity">+</button></div><span class="cart-line-total">${formatPrice(product.price * item.qty)}</span></div></div></article>`; }).join("")}</div><aside class="order-summary"><p class="eyebrow">Order summary</p><h2>${cartCount()} ${cartCount() === 1 ? "piece" : "pieces"}</h2><div class="summary-line"><span>Subtotal</span><strong>${formatPrice(subtotal)}</strong></div><div class="summary-line"><span>Delivery</span><strong>To be confirmed</strong></div><div class="summary-line summary-total"><span>Estimated total</span><span>${formatPrice(subtotal)}</span></div><div class="free-shipping">${remaining > 0 ? `Add ${formatPrice(remaining)} more for free shipping.` : "You qualify for free shipping."}<div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div></div><form class="checkout-form" id="checkout-form"><div class="form-row"><div class="field"><label for="customer-name">Name *</label><input id="customer-name" name="name" value="${saved.name || ""}" required autocomplete="name"></div><div class="field"><label for="customer-phone">Mobile</label><input id="customer-phone" name="phone" value="${saved.phone || ""}" inputmode="tel" autocomplete="tel"></div></div><div class="field"><label for="customer-city">City / Pincode *</label><input id="customer-city" name="city" value="${saved.city || ""}" required autocomplete="postal-code"></div><div class="field"><label for="customer-address">Delivery address</label><textarea id="customer-address" name="address" autocomplete="street-address">${saved.address || ""}</textarea></div><div class="field"><label for="customer-note">Order note</label><textarea id="customer-note" name="note" placeholder="Colour, delivery or gifting instructions…">${saved.note || ""}</textarea></div><button class="btn btn-whatsapp btn-block" type="submit">${icons.whatsapp} Send order on WhatsApp</button><p class="form-note">No payment is taken here. Stock, delivery and final total are confirmed in chat.</p></form></aside></div></section>`;
-      document.getElementById("checkout-form").addEventListener("submit", event => {
+      document.getElementById("checkout-form").addEventListener("submit", async event => {
         event.preventDefault();
         const data = Object.fromEntries(new FormData(event.currentTarget));
         localStorage.setItem(CUSTOMER_KEY, JSON.stringify(data));
+        await saveLeadRecord({
+          source: "Cart Checkout",
+          name: data.name,
+          phone: data.phone,
+          product_need: getCart().map(item => {
+            const product = getProduct(item.id);
+            return product ? `${product.name} x${item.qty}` : "";
+          }).filter(Boolean).join(", "),
+          amount: cartSubtotal(),
+          notes: `City/Pincode: ${data.city || ""} | Address: ${data.address || ""} | Note: ${data.note || ""}`,
+          page: "cart"
+        });
         sendWhatsApp(cartMessage(data));
       });
     };
@@ -274,9 +346,17 @@
     root.innerHTML = `
       <section class="page-hero"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Contact</span></div><p class="eyebrow">We are here to help</p><h1>Let’s talk.</h1><p>Questions about a product, delivery or a larger order? Send us a message.</p></div></section>
       <section class="section"><div class="container contact-layout"><div><p class="eyebrow">Contact details</p><h2 class="section-title">A real person will reply.</h2><p class="section-intro">For the fastest response, use WhatsApp. Demo mode currently previews the message until a client number is added.</p><div class="contact-cards section-sm"><div class="contact-card"><div class="trust-icon">${icons.whatsapp}</div><div><h3>WhatsApp</h3><p>${STORE.phoneDisplay}</p></div></div><div class="contact-card"><div class="trust-icon">${icons.mail}</div><div><h3>Email</h3><a href="mailto:${STORE.email}">${STORE.email}</a></div></div><div class="contact-card"><div class="trust-icon">${icons.map}</div><div><h3>Location</h3><p>${STORE.address}</p></div></div><div class="contact-card"><div class="trust-icon">${icons.clock}</div><div><h3>Business hours</h3><p>${STORE.hours}</p></div></div></div></div><div class="contact-form-card"><p class="eyebrow">Send an enquiry</p><h2>How can we help?</h2><form class="checkout-form" id="contact-form"><div class="form-row"><div class="field"><label for="contact-name">Name *</label><input id="contact-name" name="name" required></div><div class="field"><label for="contact-phone">Mobile</label><input id="contact-phone" name="phone" inputmode="tel"></div></div><div class="field"><label for="contact-subject">Subject</label><select id="contact-subject" name="subject"><option>Product question</option><option>Delivery question</option><option>Bulk / gifting order</option><option>Other</option></select></div><div class="field"><label for="contact-message">Message *</label><textarea id="contact-message" name="message" required rows="6"></textarea></div><button class="btn btn-whatsapp" type="submit">${icons.whatsapp} Send on WhatsApp</button></form></div></div></section>`;
-    document.getElementById("contact-form").addEventListener("submit", event => {
+    document.getElementById("contact-form").addEventListener("submit", async event => {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget));
+      await saveLeadRecord({
+        source: "Contact Page",
+        name: data.name,
+        phone: data.phone,
+        product_need: data.subject,
+        notes: data.message,
+        page: "contact"
+      });
       sendWhatsApp(`Hello ${STORE.name},\n\nName: ${data.name}\nMobile: ${data.phone || "Not provided"}\nSubject: ${data.subject}\n\n${data.message}`);
     });
   }
@@ -299,6 +379,7 @@
     }
     canonical.href = canonicalUrl.href;
 
+    const addressParts = String(STORE.address || "").split(",").map(part => part.trim()).filter(Boolean);
     const graph = [{
       "@type": "LocalBusiness",
       "@id": `${new URL("index.html", location.href).href}#business`,
@@ -306,11 +387,17 @@
       description: STORE.description,
       url: new URL("index.html", location.href).href,
       image: new URL("assets/images/hero/hero-home.webp", location.href).href,
-      address: { "@type": "PostalAddress", addressLocality: "Gorakhpur", addressRegion: "Uttar Pradesh", addressCountry: "IN" }
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: addressParts[0] || "",
+        addressRegion: addressParts[1] || "",
+        addressCountry: "IN"
+      }
     }];
 
     if (page === "product") {
-      const product = getProduct(new URLSearchParams(location.search).get("id")) || PRODUCTS[0];
+      const product = getProduct(new URLSearchParams(location.search).get("id"));
+      if (product) {
       graph.push({
         "@type": "Product",
         name: product.name,
@@ -335,6 +422,7 @@
           { "@type": "ListItem", position: 3, name: product.name, item: canonicalUrl.href }
         ]
       });
+      }
     }
 
     let schema = document.getElementById("site-schema");
@@ -352,19 +440,46 @@
   }
 
   function addToCart(id, qty = 1) {
+    const product = getProduct(id);
+    if (!product) return;
+    const stock = Math.max(0, Number(product.stock) || 0);
+    if (stock <= 0) {
+      showToast("This item is currently unavailable");
+      return;
+    }
     const cart = getCart();
     const existing = cart.find(item => item.id === id);
-    if (existing) existing.qty = Math.min(99, existing.qty + qty);
-    else cart.push({ id, qty });
+    const nextQty = normalizeQty(qty);
+    if (existing) {
+      const updated = Math.min(stock, existing.qty + nextQty);
+      if (updated === existing.qty) {
+        showToast(`Only ${stock} available right now`);
+        return;
+      }
+      existing.qty = updated;
+    } else {
+      cart.push({ id, qty: Math.min(stock, nextQty) });
+    }
     setCart(cart);
-    showToast(`${getProduct(id)?.name || "Item"} added to cart`);
+    showToast(`${product.name} added to cart`);
   }
 
   function updateCartQty(id, delta) {
+    const product = getProduct(id);
+    if (!product) {
+      setCart(getCart().filter(entry => entry.id !== id));
+      return;
+    }
+    const stock = Math.max(0, Number(product.stock) || 0);
     const cart = getCart();
     const item = cart.find(entry => entry.id === id);
     if (!item) return;
-    item.qty += delta;
+    const next = item.qty + delta;
+    if (next > stock) {
+      showToast(`Only ${stock} available right now`);
+      return;
+    }
+    item.qty = next;
     setCart(cart.filter(entry => entry.qty > 0));
   }
 
@@ -541,6 +656,9 @@
 
   shell();
   setupGlobalEvents();
+  if (API?.syncQueuedLeads) {
+    API.syncQueuedLeads().catch(() => null);
+  }
   const renderers = { home: homePage, shop: shopPage, product: productPage, wishlist: wishlistPage, cart: cartPage, about: aboutPage, contact: contactPage, policies: policiesPage };
   (renderers[page] || homePage)();
   updateSEO();
