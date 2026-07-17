@@ -1,0 +1,77 @@
+name: Mitti One Shot Update
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - .github/workflows/mitti-one-shot-update-lite.yml
+      - .github/workflows/mitti-patch-files.tar.gz
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-push:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Extract prepared patch
+        shell: bash
+        run: |
+          test -f .github/workflows/mitti-patch-files.tar.gz
+          tar -xzf .github/workflows/mitti-patch-files.tar.gz -C .
+
+      - name: Validate JavaScript
+        run: |
+          node --check js/store-config.js
+          node --check js/products.js
+          node --check js/sheet-api.js
+          node --check js/ad-editor.js
+          node --check js/app.js
+
+      - name: Validate script API
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import re, urllib.request
+          s = open('js/store-config.js', 'r', encoding='utf-8').read()
+          m = re.search(r'apiBase:\s*"([^"]+)"', s)
+          assert m, 'apiBase not found'
+          api = m.group(1).strip()
+          assert api, 'apiBase empty'
+          for action in ['info', 'ads']:
+              with urllib.request.urlopen(api + '?action=' + action, timeout=30) as r:
+                  body = r.read().decode('utf-8', 'ignore')
+                  print(action, body[:400])
+          PY
+
+      - name: Commit and push patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add about.html cart.html contact.html index.html policies.html product.html shop.html wishlist.html ad-editor.html js/app.js js/store-config.js js/sheet-api.js js/ad-editor.js CRM-SETUP.md WHAT-LINK-TO-SEND.md PRODUCTION-READY-SUMMARY.md
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+          else
+            git commit -m "Apply Mitti CRM + ad editor production patch"
+            git push origin HEAD:main
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Mitti update applied" >> "$GITHUB_STEP_SUMMARY"
+          echo "- CRM API connected" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Ad editor added" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Frontend patch pushed to main" >> "$GITHUB_STEP_SUMMARY"
